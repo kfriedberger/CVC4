@@ -47,12 +47,12 @@
     this.em = SmtEngine.mkRef(getExprManager()); // keep ref to em in SWIG proxy class
   }
 %typemap(javadestruct, methodname="delete", methodmodifiers="public synchronized") CVC4::Expr {
-    SmtEngine.dlRef(em);
+    // SmtEngine.dlRef(em);
     em = null;
     if (swigCPtr != 0) {
       if (swigCMemOwn) {
         swigCMemOwn = false;
-        CVC4JNI.delete_Expr(swigCPtr);
+        // CVC4JNI.delete_Expr(swigCPtr);
       }
       swigCPtr = 0;
     }
