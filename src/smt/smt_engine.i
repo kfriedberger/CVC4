@@ -32,12 +32,12 @@ SWIGEXPORT void JNICALL Java_edu_nyu_acsys_CVC4_SmtEngine_dlRef(JNIEnv* jenv, jc
     emRef = mkRef(em); // keep ref to expr manager in SWIG proxy class
   }
 %typemap(javadestruct, methodname="delete", methodmodifiers="public synchronized") CVC4::SmtEngine {
-    dlRef(emRef);
+    // dlRef(emRef);
     emRef = null;
     if (swigCPtr != 0) {
       if (swigCMemOwn) {
         swigCMemOwn = false;
-        CVC4JNI.delete_SmtEngine(swigCPtr);
+        // CVC4JNI.delete_SmtEngine(swigCPtr);
       }
       swigCPtr = 0;
     }
