@@ -15,6 +15,9 @@
  **/
 #include "parser/smt2/smt2.h"
 
+#include <algorithm>
+
+#include "base/check.h"
 #include "expr/type.h"
 #include "options/options.h"
 #include "parser/antlr_input.h"
@@ -22,8 +25,6 @@
 #include "parser/smt2/smt2_input.h"
 #include "printer/sygus_print_callback.h"
 #include "util/bitvector.h"
-
-#include <algorithm>
 
 // ANTLR defines these, which is really bad!
 #undef true
@@ -303,6 +304,7 @@ void Smt2::addTheory(Theory theory) {
     addOperator(kind::IS_INTEGER, "is_int");
     addOperator(kind::TO_REAL, "to_real");
     // falling through on purpose, to add Ints part of Reals_Ints
+    CVC4_FALLTHROUGH;
   case THEORY_INTS:
     defineType("Int", getExprManager()->integerType());
     addArithmeticOperators();
@@ -610,6 +612,7 @@ void Smt2::pushDefineFunRecScope(
 
 void Smt2::reset() {
   d_logicSet = false;
+  d_seenSetLogic = false;
   d_logic = LogicInfo();
   operatorKindMap.clear();
   d_lastNamedTerm = std::pair<Expr, std::string>();
@@ -627,6 +630,33 @@ void Smt2::resetAssertions() {
   }
 }
 
+std::unique_ptr<Command> Smt2::assertRewriteRule(
+    Kind kind,
+    Expr bvl,
+    const std::vector<Expr>& triggers,
+    const std::vector<Expr>& guards,
+    const std::vector<Expr>& heads,
+    Expr body)
+{
+  assert(kind == kind::RR_REWRITE || kind == kind::RR_REDUCTION
+         || kind == kind::RR_DEDUCTION);
+
+  ExprManager* em = getExprManager();
+
+  std::vector<Expr> args;
+  args.push_back(mkAnd(heads));
+  args.push_back(body);
+
+  if (!triggers.empty())
+  {
+    args.push_back(em->mkExpr(kind::INST_PATTERN_LIST, triggers));
+  }
+
+  Expr rhs = em->mkExpr(kind, args);
+  Expr rule = em->mkExpr(kind::REWRITE_RULE, bvl, mkAnd(guards), rhs);
+  return std::unique_ptr<Command>(new AssertCommand(rule, false));
+}
+
 Smt2::SynthFunFactory::SynthFunFactory(
     Smt2* smt2,
     const std::string& fun,
@@ -635,7 +665,6 @@ Smt2::SynthFunFactory::SynthFunFactory(
     std::vector<std::pair<std::string, CVC4::Type>>& sortedVarNames)
     : d_smt2(smt2), d_fun(fun), d_isInv(isInv)
 {
-  smt2->checkThatLogicIsSet();
   if (range.isNull())
   {
     smt2->parseError("Must supply return type for synth-fun.");
@@ -810,14 +839,10 @@ Command* Smt2::setLogic(std::string name, bool fromCommand)
     addTheory(THEORY_SEP);
   }
 
-  if (sygus())
-  {
-    return new SetBenchmarkLogicCommand(d_logic.getLogicString());
-  }
-  else
-  {
-    return new SetBenchmarkLogicCommand(name);
-  }
+  Command* cmd =
+      new SetBenchmarkLogicCommand(sygus() ? d_logic.getLogicString() : name);
+  cmd->setMuted(!fromCommand);
+  return cmd;
 } /* Smt2::setLogic() */
 
 bool Smt2::sygus() const
@@ -1279,7 +1304,7 @@ void Smt2::mkSygusDatatype( CVC4::Datatype& dt, std::vector<CVC4::Expr>& ops,
         }
         children.insert(children.end(), largs.begin(), largs.end());
         Kind sk = ops[i].getKind() != kind::BUILTIN
-                      ? kind::APPLY_UF
+                      ? getKindForFunction(ops[i])
                       : getExprManager()->operatorToKind(ops[i]);
         Expr body = getExprManager()->mkExpr(sk, children);
         // replace by lambda
@@ -1410,6 +1435,10 @@ void Smt2::addSygusConstructorTerm(Datatype& dt,
                                    std::map<Expr, Type>& ntsToUnres) const
 {
   Trace("parser-sygus2") << "Add sygus cons term " << term << std::endl;
+  // Ensure that we do type checking here to catch sygus constructors with
+  // malformed builtin operators. The argument "true" to getType here forces
+  // a recursive well-typedness check.
+  term.getType(true);
   // purify each occurrence of a non-terminal symbol in term, replace by
   // free variables. These become arguments to constructors. Notice we must do
   // a tree traversal in this function, since unique paths to the same term
@@ -1902,6 +1931,24 @@ Expr Smt2::setNamedAttribute(Expr& expr, const SExpr& sexpr)
   // remember the last term to have been given a :named attribute
   setLastNamedTerm(expr, name);
   return func;
+}
+
+Expr Smt2::mkAnd(const std::vector<Expr>& es)
+{
+  ExprManager* em = getExprManager();
+
+  if (es.size() == 0)
+  {
+    return em->mkConst(true);
+  }
+  else if (es.size() == 1)
+  {
+    return es[0];
+  }
+  else
+  {
+    return em->mkExpr(kind::AND, es);
+  }
 }
 
 }  // namespace parser

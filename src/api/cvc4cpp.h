@@ -576,10 +576,25 @@ class CVC4_PUBLIC Term
   bool operator!=(const Term& t) const;
 
   /**
+   * @return the id of this term
+   */
+  uint64_t getId() const;
+
+  /**
    * @return the kind of this term
    */
   Kind getKind() const;
-  
+
+  /**
+   * @return the sort of this term
+   */
+  Sort getSort() const;
+
+  /**
+   * @return true if this Term is a null term
+   */
+  bool isNull() const;
+
   /**
    * @return true if this expression is parameterized.
    *
@@ -596,16 +611,6 @@ class CVC4_PUBLIC Term
    *   mkTerm(t.getKind(), b1, ..., bn )
    */
   bool isParameterized() const;
-  
-  /**
-   * @return the sort of this term
-   */
-  Sort getSort() const;
-
-  /**
-   * @return true if this Term is a null term
-   */
-  bool isNull() const;
 
   /**
    * Boolean negation.
@@ -1017,7 +1022,7 @@ class CVC4_PUBLIC DatatypeConstructorDecl
 
   // !!! This is only temporarily available until the parser is fully migrated
   // to the new API. !!!
-  CVC4::DatatypeConstructor getDatatypeConstructor(void) const;
+  const CVC4::DatatypeConstructor& getDatatypeConstructor(void) const;
 
  private:
   /**
@@ -1090,7 +1095,7 @@ class CVC4_PUBLIC DatatypeDecl
 
   // !!! This is only temporarily available until the parser is fully migrated
   // to the new API. !!!
-  CVC4::Datatype getDatatype(void) const;
+  const CVC4::Datatype& getDatatype(void) const;
 
  private:
   /* The internal (intermediate) datatype wrapped by this datatype
@@ -1304,7 +1309,7 @@ class CVC4_PUBLIC DatatypeConstructor
 
   // !!! This is only temporarily available until the parser is fully migrated
   // to the new API. !!!
-  CVC4::DatatypeConstructor getDatatypeConstructor(void) const;
+  const CVC4::DatatypeConstructor& getDatatypeConstructor(void) const;
 
  private:
   /**
@@ -1456,7 +1461,7 @@ class CVC4_PUBLIC Datatype
 
   // !!! This is only temporarily available until the parser is fully migrated
   // to the new API. !!!
-  CVC4::Datatype getDatatype(void) const;
+  const CVC4::Datatype& getDatatype(void) const;
 
  private:
   /**
