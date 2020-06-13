@@ -19,6 +19,7 @@
 
 #include <unordered_set>
 
+#include "expr/dtype.h"
 #include "theory/evaluator.h"
 #include "theory/quantifiers/extended_rewrite.h"
 #include "theory/quantifiers/fun_def_evaluator.h"
@@ -102,17 +103,13 @@ class TermDbSygus {
    * and not x2-x1 will be generated, assuming x1 and x2 are in the same
    * "subclass", see getSubclassForVar).
    *
-   * useSymbolicCons : whether we want model values for e to include symbolic
-   * constructors like the "any constant" variable.
-   *
    * An "active guard" may be allocated by this method for e based on erole
    * and the policies for active generation.
    */
   void registerEnumerator(Node e,
                           Node f,
                           SynthConjecture* conj,
-                          EnumeratorRole erole,
-                          bool useSymbolicCons = false);
+                          EnumeratorRole erole);
   /** is e an enumerator registered with this class? */
   bool isEnumerator(Node e) const;
   /** return the conjecture e is associated with */
@@ -204,9 +201,9 @@ class TermDbSygus {
                       std::map<TypeNode, int>& var_count,
                       bool useSygusType = false);
   /** returns true if n is a cached free variable (in d_fv). */
-  bool isFreeVar(Node n) { return d_fv_stype.find(n) != d_fv_stype.end(); }
-  /** returns the index of n in the free variable cache (d_fv). */
-  int getVarNum(Node n) { return d_fv_num[n]; }
+  bool isFreeVar(Node n) const;
+  /** returns the identifier for a cached free variable. */
+  size_t getFreeVarId(Node n) const;
   /** returns true if n has a cached free variable (in d_fv). */
   bool hasFreeVar(Node n);
   /** get sygus proxy variable
@@ -229,18 +226,18 @@ class TermDbSygus {
    * If doBetaRed is true, then lambda operators are eagerly eliminated via
    * beta reduction.
    */
-  Node mkGeneric(const Datatype& dt,
+  Node mkGeneric(const DType& dt,
                  unsigned c,
                  std::map<TypeNode, int>& var_count,
                  std::map<int, Node>& pre,
                  bool doBetaRed = true);
   /** same as above, but with empty var_count */
-  Node mkGeneric(const Datatype& dt,
+  Node mkGeneric(const DType& dt,
                  int c,
                  std::map<int, Node>& pre,
                  bool doBetaRed = true);
   /** same as above, but with empty pre */
-  Node mkGeneric(const Datatype& dt, int c, bool doBetaRed = true);
+  Node mkGeneric(const DType& dt, int c, bool doBetaRed = true);
   /** makes a symbolic term concrete
    *
    * Given a sygus datatype term n of type tn with holes (symbolic constructor
@@ -269,7 +266,7 @@ class TermDbSygus {
    */
   Node evaluateBuiltin(TypeNode tn,
                        Node bn,
-                       std::vector<Node>& args,
+                       const std::vector<Node>& args,
                        bool tryEval = true);
   /** evaluate with unfolding
    *
@@ -376,8 +373,16 @@ class TermDbSygus {
   std::map<TypeNode, std::vector<Node> > d_fv[2];
   /** Maps free variables to the domain type they are associated with in d_fv */
   std::map<Node, TypeNode> d_fv_stype;
-  /** Maps free variables to their index in d_fv. */
-  std::map<Node, int> d_fv_num;
+  /** Id count for free variables terms */
+  std::map<TypeNode, size_t> d_fvTypeIdCounter;
+  /**
+   * Maps free variables to a unique identifier for their builtin type. Notice
+   * that, e.g. free variables of type Int and those that are of a sygus
+   * datatype type that encodes Int must have unique identifiers. This is
+   * to ensure that sygusToBuiltin for non-ground terms maps variables to
+   * unique variabales.
+   */
+  std::map<Node, size_t> d_fvId;
   /** recursive helper for hasFreeVar, visited stores nodes we have visited. */
   bool hasFreeVar(Node n, std::map<Node, bool>& visited);
   /** cache of getProxyVariable */
@@ -413,9 +418,9 @@ class TermDbSygus {
   /** get the weight of the selector, where tn is the domain of sel */
   unsigned getSelectorWeight(TypeNode tn, Node sel);
   /** get arg type */
-  TypeNode getArgType(const DatatypeConstructor& c, unsigned i) const;
+  TypeNode getArgType(const DTypeConstructor& c, unsigned i) const;
   /** Do constructors c1 and c2 have the same type? */
-  bool isTypeMatch( const DatatypeConstructor& c1, const DatatypeConstructor& c2 );
+  bool isTypeMatch(const DTypeConstructor& c1, const DTypeConstructor& c2);
   /** return whether n is an application of a symbolic constructor */
   bool isSymbolicConsApp(Node n) const;
   /** can construct kind
@@ -443,7 +448,6 @@ class TermDbSygus {
                         std::vector<TypeNode>& argts,
                         bool aggr = false);
 
-  TypeNode getSygusTypeForVar( Node v );
   Node getSygusNormalized( Node n, std::map< TypeNode, int >& var_count, std::map< Node, Node >& subs );
   Node getNormalized(TypeNode t, Node prog);
   unsigned getSygusTermSize( Node n );
