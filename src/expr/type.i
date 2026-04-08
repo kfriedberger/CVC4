@@ -91,7 +91,27 @@
   return new vectorType(this.em, $jnicall, true);
 }
 
-%typemap(javafinalize) CVC4::Type "" // disable finalize in Java
+// disable finalize in Java, for all the types above
+%typemap(javafinalize) CVC4::Type,
+                       CVC4::ArrayType,
+                       CVC4::BitVectorType,
+                       CVC4::BooleanType,
+                       CVC4::ConstructorType,
+                       CVC4::Datatype,
+                       CVC4::DatatypeType,
+                       CVC4::FloatingPointType,
+                       CVC4::FunctionType,
+                       CVC4::SelectorType,
+                       CVC4::StringType,
+                       CVC4::RegExpType,
+                       CVC4::RealType,
+                       CVC4::SetType,
+                       CVC4::SExprType,
+                       CVC4::SortType,
+                       CVC4::SortConstructorType,
+                       CVC4::TesterType,
+                       CVC4::IntegerType,
+                       CVC4::RoundingModeType ""
 
 %typemap(javabody) CVC4::Type %{
   private long swigCPtr;

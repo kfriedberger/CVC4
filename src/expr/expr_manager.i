@@ -10,7 +10,8 @@
 
 #ifdef SWIGJAVA
 
-%typemap(javafinalize) SWIGTYPE "" // disable finalize in Java, for all the types above
+// disable finalize in Java, for all the types above
+%typemap(javafinalize) CVC4::ExprManager ""
 
 %typemap(javaout) CVC4::Expr {
   return new Expr(this, $jnicall, true);
