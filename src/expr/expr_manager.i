@@ -98,7 +98,7 @@
   return new RoundingModeType(this, $jnicall, true);
 }
 
-%typemap(javafinalize) CVC4::ExprManager "" // disable finalize in Java
+%typemap(javafinalize) SWIGTYPE "" // disable finalize in Java, for all the types above
 
 %javamethodmodifiers CVC4::ExprManager::exportType(const Type& t, ExprManager* em, ExprManagerMapCollection& vmap) "public";
 
