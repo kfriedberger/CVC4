@@ -4,6 +4,8 @@
 
 #ifdef SWIGJAVA
 
+%typemap(javafinalize) CVC4::SmtEngine "" // disable finalize in Java
+
 %typemap(javacode) CVC4::SmtEngine %{
   // a ref is kept here to keep Java GC from collecting the EM
   // before the SmtEngine

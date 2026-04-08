@@ -34,6 +34,8 @@
 %ignore CVC4::Expr::getExprManager() const;
 %rename(apply) CVC4::ExprHashFunction::operator()(CVC4::Expr) const;
 
+%typemap(javafinalize) CVC4::Expr "" // disable finalize in Java
+
 %typemap(javabody) CVC4::Expr %{
   private long swigCPtr;
   protected boolean swigCMemOwn;

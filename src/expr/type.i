@@ -91,6 +91,8 @@
   return new vectorType(this.em, $jnicall, true);
 }
 
+%typemap(javafinalize) CVC4::Type "" // disable finalize in Java
+
 %typemap(javabody) CVC4::Type %{
   private long swigCPtr;
   protected boolean swigCMemOwn;
